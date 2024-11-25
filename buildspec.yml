@@ -2,28 +2,34 @@ version: 0.2
 
 phases:
   install:
+    runtime-versions:
+      dotnet: 8.0
+      nodejs: 16
     commands:
       - apt-get update
       - apt-get install -y nginx
+      - echo "Restoring backend dependencies..."
+      - dotnet restore
+      - echo "Installing frontend dependencies..."
+      - cd ClientApp
+      - npm install
+      - cd ..
   build:
     commands:
-      - echo "Creating /var/www/html directory..."
-      - mkdir -p /var/www/html
-      - echo "Copying all files to /var/www/html..."
-      - cp -R * /var/www/html/
-      - echo "Files in /var/www/html after copying:"
-      - ls -R /var/www/html
+      - echo "Building the frontend..."
+      - cd ClientApp
+      - npm run build
+      - cd ..
+      - echo "Building the backend..."
+      - dotnet publish -c Release -o /var/www/html
+      - echo "Copying frontend build files to the backend output directory..."
+      - cp -R ClientApp/build/* /var/www/html/wwwroot/
   post_build:
     commands:
-      - echo "Starting Nginx to serve the static site..."
-      # - systemctl start nginx
-      - echo "Nginx is now serving your static site on port 80"
+      - echo "Build and integration completed. Contents of /var/www/html:"
+      - ls -R /var/www/html
 artifacts:
   files:
-    - index.html
-    - '**/channel-pictures/**'
-    - '**/icons/**'
-    - '**/thumbnails/**'
-    - '**/styles/**'
+    - '**/*'
   discard-paths: no
   base-directory: /var/www/html
