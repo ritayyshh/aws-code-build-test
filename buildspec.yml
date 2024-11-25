@@ -3,33 +3,40 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      dotnet: 8.0
       nodejs: 16
+      dotnet: 8.0
     commands:
-      - apt-get update
-      - apt-get install -y nginx
-      - echo "Restoring backend dependencies..."
+      - echo Installing backend dependencies...
+      - cd api
       - dotnet restore
-      - echo "Installing frontend dependencies..."
-      - cd ClientApp
+      - echo Installing frontend dependencies...
+      - cd ../frontend
       - npm install
-      - cd ..
+
+  pre_build:
+    commands:
+      - echo Running pre-build commands...
+
   build:
     commands:
-      - echo "Building the frontend..."
-      - cd ClientApp
+      - echo Building backend...
+      - cd ../api
+      - dotnet build --configuration Release
+      - echo Building frontend...
+      - cd ../frontend
       - npm run build
-      - cd ..
-      - echo "Building the backend..."
-      - dotnet publish -c Release -o /var/www/html
-      - echo "Copying frontend build files to the backend output directory..."
-      - cp -R ClientApp/build/* /var/www/html/wwwroot/
+
   post_build:
     commands:
-      - echo "Build and integration completed. Contents of /var/www/html:"
-      - ls -R /var/www/html
+      - echo Build completed successfully.
+
 artifacts:
   files:
     - '**/*'
   discard-paths: no
-  base-directory: /var/www/html
+  base-directory: frontend/build
+
+cache:
+  paths:
+    - '/root/.nuget/packages/**/*'
+    - 'frontend/node_modules/**/*'
